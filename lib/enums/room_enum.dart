@@ -1,0 +1,4 @@
+enum RoomEnum {
+  private,
+  public;
+}
