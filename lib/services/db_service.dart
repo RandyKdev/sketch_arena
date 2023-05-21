@@ -128,7 +128,7 @@ class DbService {
       if (message == correctWordData['correctWord']) return true;
       return false;
     } on PostgrestException catch (error) {
-      print('Caught an error while fetchine correct word');
+      print('Caught an error while fetching correct word');
       print(error);
       return false;
     }
