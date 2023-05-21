@@ -10,8 +10,8 @@ class DbService {
 
   Future<Player?> createPlayer({required Player player}) async {
     final cretedPlayerResponse = await supabase.functions.invoke(
-      'createPlayer',
-      body: player.createPlayerMap(),
+      'edgeFunction',
+      body: player.createPlayerMap()..addAll({'invokeCode': 'createPlayer'}),
     );
 
     if (cretedPlayerResponse.status != 200) {
@@ -23,8 +23,8 @@ class DbService {
 
   Future<Room?> createRoom({required Player player}) async {
     final cretedRoomResponse = await supabase.functions.invoke(
-      'createRoom',
-      body: player.completePlayerMap(),
+      'edgeFunction',
+      body: player.completePlayerMap()..addAll({'invokeCode': 'createRoom'}),
     );
 
     if (cretedRoomResponse.status != 200) {
@@ -39,8 +39,12 @@ class DbService {
     required String? roomId,
   }) async {
     final joinedRoomResponse = await supabase.functions.invoke(
-      'joinRoom',
-      body: player.completePlayerMap()..addAll({'roomId': roomId}),
+      'edgeFunction',
+      body: player.completePlayerMap()
+        ..addAll({
+          'roomId': roomId,
+          'invokeCode': 'joinRoom',
+        }),
     );
 
     if (joinedRoomResponse.status != 200) {
@@ -88,11 +92,12 @@ class DbService {
     required Player player,
   }) async {
     final startedRoundResponse = await supabase.functions.invoke(
-      'createRound',
+      'edgeFunction',
       body: {
         'roomId': rooom.roomId,
         'choosenWord': choosenWord,
         'playerId': player.playerId,
+        'invokeCode': 'createRound',
       },
     );
 
@@ -108,10 +113,11 @@ class DbService {
     required Player player,
   }) async {
     final getChoiceWordsResponse = await supabase.functions.invoke(
-      'getChoiceWords',
+      'edgeFunction',
       body: {
         'roomId': rooom.roomId,
         'playerId': player.playerId,
+        'invokeCode': 'getChoiceWords',
       },
     );
 
@@ -138,10 +144,11 @@ class DbService {
     required Player player,
   }) async {
     final getNextRoundPlayerResponse = await supabase.functions.invoke(
-      'getNextRoundPlayer',
+      'edgeFunction',
       body: {
         'roomId': rooom.roomId,
         'playerId': player.playerId,
+        'invokeCode': 'getNextRoundPlayer',
       },
     );
 
@@ -156,8 +163,8 @@ class DbService {
 
   Future<void> exitPlayer(Player player) async {
     await supabase.functions.invoke(
-      'exitPlayer',
-      body: {'playerId': player.playerId},
+      'edgeFunction',
+      body: {'playerId': player.playerId, 'invokeCode': 'exitPlayer'},
     );
   }
 }
