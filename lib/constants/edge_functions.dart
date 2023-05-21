@@ -1,0 +1,1 @@
+const edgeFunctionName = 'edgeFunction';

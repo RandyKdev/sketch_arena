@@ -1,5 +1,7 @@
 import 'package:sketch_arena/constants/db_tables.dart';
+import 'package:sketch_arena/constants/edge_functions.dart';
 import 'package:sketch_arena/models/end_current_response.dart';
+import 'package:sketch_arena/models/message.dart';
 import 'package:sketch_arena/models/player.dart';
 import 'package:sketch_arena/models/room.dart';
 import 'package:sketch_arena/models/round.dart';
@@ -11,7 +13,7 @@ class DbService {
 
   Future<Player?> createPlayer({required Player player}) async {
     final cretedPlayerResponse = await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: player.createPlayerMap()..addAll({'invokeCode': 'createPlayer'}),
     );
 
@@ -24,7 +26,7 @@ class DbService {
 
   Future<Room?> createRoom({required Player player, required Room room}) async {
     final cretedRoomResponse = await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: player.completePlayerMap()
         ..addAll(room.toMap())
         ..addAll({'invokeCode': 'createRoom'}),
@@ -42,7 +44,7 @@ class DbService {
     required int? roomId,
   }) async {
     final joinedRoomResponse = await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: player.completePlayerMap()
         ..addAll({
           if (roomId != null) 'roomId': roomId,
@@ -89,9 +91,51 @@ class DbService {
         );
   }
 
+  Stream<List<Message?>> streamMessages(Room room) {
+    return supabase
+        .from(messagesTable)
+        .stream(primaryKey: ['messageId'])
+        .eq('roomId', room.roomId)
+        .map((message) => message.map(Message.fromMap).toList());
+  }
+
+  Future<Message?> sendMessage(Message message) async {
+    final sentMessageResponse = await supabase.functions.invoke(
+      edgeFunctionName,
+      body: {
+        ...message.toMap(),
+        'invokeCode': 'sendMessage',
+      },
+    );
+
+    if (sentMessageResponse.status != 200) {
+      return null;
+    }
+
+    return Message.fromMap(sentMessageResponse.data as Map<String, dynamic>);
+  }
+
+  Future<bool> isMessageCorrect(String message, String roomId) async {
+    Map<String, dynamic> correctWordData;
+    try {
+      correctWordData = await supabase
+          .from(roundTable)
+          .select<Map<String, dynamic>>('correctWord')
+          .eq('roomId', roomId)
+          .eq('active', true)
+          .single();
+      if (message == correctWordData['correctWord']) return true;
+      return false;
+    } on PostgrestException catch (error) {
+      print('Caught an error while fetching correct word');
+      print(error);
+      return false;
+    }
+  }
+
   Future<Round?> createRound(Round round) async {
     final startedRoundResponse = await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: {
         ...round.toMap(),
         'invokeCode': 'createRound',
@@ -104,28 +148,6 @@ class DbService {
 
     return Round.fromMap(startedRoundResponse.data as Map<String, dynamic>);
   }
-
-  // Future<List<String>?> getChoiceWords({
-  //   required Room room,
-  //   required Player player,
-  // }) async {
-  //   final getChoiceWordsResponse = await supabase.functions.invoke(
-  //     'edgeFunction',
-  //     body: {
-  //       'roomId': room.roomId,
-  //       'playerId': player.playerId,
-  //       'invokeCode': 'getChoiceWords',
-  //     },
-  //   );
-
-  //   if (getChoiceWordsResponse.status != 200) {
-  //     return null;
-  //   }
-
-  //   return (getChoiceWordsResponse.data as List<dynamic>)
-  //       .map((e) => e as String)
-  //       .toList();
-  // }
 
   Future<void> updateSketch({
     required Round round,
@@ -141,7 +163,7 @@ class DbService {
     required Round round,
   }) async {
     final getNextRoundPlayerResponse = await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: {
         ...room.toMap(),
         ...round.toMap(),
@@ -160,7 +182,7 @@ class DbService {
 
   Future<void> exitPlayer(Player player) async {
     await supabase.functions.invoke(
-      'edgeFunction',
+      edgeFunctionName,
       body: {
         ...player.completePlayerMap(),
         'invokeCode': 'exitPlayer',

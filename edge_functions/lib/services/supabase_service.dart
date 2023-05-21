@@ -1,5 +1,6 @@
 import 'package:edge_http_client/edge_http_client.dart';
 import 'package:sketch_arena/constants/db_tables.dart';
+import 'package:sketch_arena/models/message.dart';
 import 'package:sketch_arena/models/player.dart';
 import 'package:sketch_arena/models/room.dart';
 import 'package:sketch_arena/models/round.dart';
@@ -148,6 +149,19 @@ class SupabaseService {
     return Round.fromMap(createdRoundResponse);
   }
 
+  Future<Round?> getCurrentRound(int roomId) async {
+    final getCurrentRoundResponse = await _supabaseClient
+        .from(roundTable)
+        .select<Map<String, dynamic>?>()
+        .eq('roomId', roomId)
+        .eq('active', true)
+        .maybeSingle();
+
+    if (getCurrentRoundResponse == null) return null;
+
+    return Round.fromMap(getCurrentRoundResponse);
+  }
+
   List<String> getChoiceWords() {
     return WordGenerator().randomNouns(5);
   }
@@ -223,5 +237,25 @@ class SupabaseService {
     await _supabaseClient
         .from(playersTable)
         .update({'active': false}).eq('playerId', player.playerId);
+  }
+
+  Future<Message?> createMessage(Message message) async {
+    final currentRound = await getCurrentRound(message.roomId);
+
+    if (currentRound != null) {
+      message = message.copy(
+        isCorrectGuess: currentRound.correctWord == message.content,
+      );
+      if (message.isCorrectGuess!) message = message.copy(content: '');
+    }
+
+    final createdMessage = await _supabaseClient
+        .from(messagesTable).insert(message.toMap())
+        .maybeSingle()
+        .select<Map<String, dynamic>?>();
+
+    if (createdMessage == null) return null;
+
+    return Message.fromMap(createdMessage);
   }
 }

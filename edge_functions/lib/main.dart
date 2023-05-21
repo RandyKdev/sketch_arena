@@ -1,5 +1,3 @@
-// import 'dart:convert';
-
 import 'dart:convert';
 
 import 'package:supabase_edge_functions_example/functions/create_player_function.dart';
@@ -8,6 +6,7 @@ import 'package:supabase_edge_functions_example/functions/create_round_function.
 import 'package:supabase_edge_functions_example/functions/end_current_round_function.dart';
 import 'package:supabase_edge_functions_example/functions/exit_player_function.dart';
 import 'package:supabase_edge_functions_example/functions/join_room_function.dart';
+import 'package:supabase_edge_functions_example/functions/send_message_function.dart';
 import 'package:supabase_edge_functions_example/services/supabase_service.dart';
 import 'package:supabase_functions/supabase_functions.dart';
 
@@ -43,6 +42,9 @@ void main() {
         break;
       case 'exitPlayer':
         response = await exitPlayerFunction(bodyJson);
+        break;
+      case 'sendMessage':
+        response = await sendMessageFunction(bodyJson);
         break;
       default:
         response = Response.error();
