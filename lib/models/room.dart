@@ -2,30 +2,32 @@ import 'package:intl/intl.dart';
 
 class Room {
   const Room({
-    required this.roomId,
     required this.drawTime,
     required this.active,
     required this.rounds,
     required this.players,
-    required this.createdAt,
     required this.isPrivate,
+    required this.createdAt,
+    this.roomId,
   });
 
   factory Room.fromMap(Map<String, dynamic> map) {
     return Room(
-      roomId: map['roomId'] as int,
+      roomId: map['roomId'] as int?,
       active: map['active'] as bool,
       drawTime: Duration(seconds: map['drawTime'] as int),
       rounds: map['rounds'] as int,
       players: map['players'] as int,
-      createdAt: DateFormat('dd/MM/yyyy HH:mm:ss').parse(
-        map['createdAt'] as String,
-      ),
+      createdAt: DateFormat('dd/MM/yyyy HH:mm:ss')
+          .parseUtc(
+            map['createdAt'] as String,
+          )
+          .toLocal(),
       isPrivate: map['isPrivate'] as bool,
     );
   }
 
-  final int roomId;
+  final int? roomId;
   final int rounds;
   final int players;
   final Duration drawTime;
@@ -35,13 +37,13 @@ class Room {
 
   Map<String, dynamic> toMap() {
     return {
-      'roomId': roomId,
       'drawTime': drawTime.inSeconds,
       'active': active,
       'isPrivate': isPrivate,
       'rounds': rounds,
       'players': players,
-      'createdAt': DateFormat('dd/MM/yyyy HH:mm:ss').format(createdAt),
+      'createdAt': DateFormat('dd/MM/yyyy HH:mm:ss').format(createdAt.toUtc()),
+      if (roomId != null) 'roomId': roomId,
     };
   }
 }

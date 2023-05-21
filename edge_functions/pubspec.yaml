@@ -9,8 +9,11 @@ environment:
 dependencies:
   edge: ^0.0.5
   edge_http_client: ^0.0.1+1
+  sketch_arena:
+    path: ../
   supabase: ^1.8.1
   supabase_functions: ^0.0.1
+  word_generator: ^0.4.3
 
 dev_dependencies:
   lints: ^2.0.1

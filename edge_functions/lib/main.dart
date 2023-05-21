@@ -1,19 +1,53 @@
 // import 'dart:convert';
 
+import 'dart:convert';
+
+import 'package:supabase_edge_functions_example/functions/create_player_function.dart';
+import 'package:supabase_edge_functions_example/functions/create_room_function.dart';
+import 'package:supabase_edge_functions_example/functions/create_round_function.dart';
+import 'package:supabase_edge_functions_example/functions/end_current_round_function.dart';
+import 'package:supabase_edge_functions_example/functions/exit_player_function.dart';
+import 'package:supabase_edge_functions_example/functions/join_room_function.dart';
+import 'package:supabase_edge_functions_example/services/supabase_service.dart';
 import 'package:supabase_functions/supabase_functions.dart';
-import 'package:edge_http_client/edge_http_client.dart';
-import 'package:supabase/supabase.dart';
 
 void main() {
-  final supabase = SupabaseClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    httpClient: EdgeHttpClient(),
-  );
+  SupabaseService.init();
 
   SupabaseFunctions(fetch: (request) async {
-    print((await request.formData()).get('invokeCode'));
-    final List users = await supabase.from('PLAYERS').select().limit(10);
-    return Response.json(users);
+    if (request.body == null) return Response.error();
+
+    final bodyString = await Utf8Decoder().bind(request.body!).join();
+    final bodyJson = jsonDecode(bodyString);
+
+    final invokeCode = bodyJson['invokeCode'];
+
+    if (invokeCode is! String) return Response.error();
+
+    late Response response;
+    switch (invokeCode) {
+      case 'createPlayer':
+        response = await createPlayerFunction(bodyJson);
+        break;
+      case 'createRoom':
+        response = await createRoomFunction(bodyJson);
+        break;
+      case 'joinRoom':
+        response = await joinRoomFunction(bodyJson);
+        break;
+      case 'createRound':
+        response = await createRoundFunction(bodyJson);
+        break;
+      case 'endCurrentRound':
+        response = await endCurrentRoundFunction(bodyJson);
+        break;
+      case 'exitPlayer':
+        response = await exitPlayerFunction(bodyJson);
+        break;
+      default:
+        response = Response.error();
+    }
+
+    return response;
   });
 }

@@ -1,7 +1,10 @@
+import 'package:intl/intl.dart';
+
 class Player {
   const Player({
     required this.playerName,
     required this.avatarCode,
+    required this.createdAt,
     this.roundScore,
     this.totalScore,
     this.roomId,
@@ -18,6 +21,11 @@ class Player {
       roomId: map['roomId'] as int?,
       playerId: map['playerId'] as int?,
       active: map['active'] as bool?,
+      createdAt: DateFormat('dd/MM/yyyy HH:mm:ss')
+          .parseUtc(
+            map['createdAt'] as String,
+          )
+          .toLocal(),
     );
   }
 
@@ -28,6 +36,29 @@ class Player {
   final int? roomId;
   final int? playerId;
   final bool? active;
+  final DateTime createdAt;
+
+  Player copy({
+    String? playerName,
+    int? avatarCode,
+    double? roundScore,
+    double? totalScore,
+    int? roomId,
+    int? playerId,
+    bool? active,
+    DateTime? createdAt,
+  }) {
+    return Player(
+      playerName: playerName ?? this.playerName,
+      avatarCode: avatarCode ?? this.avatarCode,
+      createdAt: createdAt ?? this.createdAt,
+      active: active ?? this.active,
+      playerId: playerId ?? this.playerId,
+      roomId: roomId ?? this.roomId,
+      roundScore: roundScore ?? this.roundScore,
+      totalScore: totalScore ?? this.totalScore,
+    );
+  }
 
   Map<String, dynamic> completePlayerMap() {
     return {
@@ -38,6 +69,7 @@ class Player {
       'roomId': roomId,
       'playerId': playerId,
       'active': active,
+      'createdAt': DateFormat('dd/MM/yyyy HH:mm:ss').format(createdAt.toUtc()),
     };
   }
 
@@ -45,6 +77,7 @@ class Player {
     return {
       'playerName': playerName,
       'avatarCode': avatarCode,
+      'createdAt': DateFormat('dd/MM/yyyy HH:mm:ss').format(createdAt.toUtc()),
     };
   }
 }
