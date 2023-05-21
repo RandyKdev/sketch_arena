@@ -1,4 +1,5 @@
 import 'package:sketch_arena/constants/db_tables.dart';
+import 'package:sketch_arena/models/message.dart';
 import 'package:sketch_arena/models/player.dart';
 import 'package:sketch_arena/models/room.dart';
 import 'package:sketch_arena/models/round.dart';
@@ -84,6 +85,53 @@ class DbService {
         .map<List<Round>>(
           (rooms) => rooms.map(Round.fromMap).toList(),
         );
+  }
+
+  Stream<List<Message?>> streamMessages(Room room) {
+    return supabase
+        .from(messagesTable)
+        .stream(primaryKey: ['messageId'])
+        .eq('roomId', room.roomId)
+        .map((message) => message.map(Message.fromJson).toList());
+  }
+
+  Future<Message?> sendMessage(
+      String message, String roomId, Player player) async {
+    final isCorrectGuess = await isMessageCorrect(message, roomId);
+    final sentMessageResponse = await supabase.functions.invoke(
+      'edgeFunction',
+      body: {
+        'roomId': roomId,
+        'message': message,
+        'playerId': player.playerId,
+        'isCorrectGuess': isCorrectGuess,
+        'invokeCode': 'sendMessage',
+      },
+    );
+
+    if (sentMessageResponse.status != 200) {
+      return null;
+    }
+
+    return Message.fromJson(sentMessageResponse.data as Map<String, dynamic>);
+  }
+
+  Future<bool> isMessageCorrect(String message, String roomId) async {
+    Map<String, dynamic> correctWordData;
+    try {
+      correctWordData = await supabase
+          .from(roundTable)
+          .select<Map<String, dynamic>>('correctWord')
+          .eq('roomId', roomId)
+          .eq('active', true)
+          .single();
+      if (message == correctWordData['correctWord']) return true;
+      return false;
+    } on PostgrestException catch (error) {
+      print('Caught an error while fetchine correct word');
+      print(error);
+      return false;
+    }
   }
 
   Future<Round?> startRound({
